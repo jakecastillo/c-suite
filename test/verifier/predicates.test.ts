@@ -24,4 +24,12 @@ describe("deterministic predicates", () => {
     const r = makeTmpGitRepo();
     expect(() => runPredicate("ask_the_model", {}, { repoRoot: r.root, asOf: "2026-09-01" })).toThrow(/unknown predicate/);
   });
+  it("commits_to_since rejects a path that escapes the repo", () => {
+    const r = makeTmpGitRepo(); r.writeFile("a.ts"); r.commit("i");
+    expect(() => runPredicate("commits_to_since", { path: "../../etc", since: "2026-01-01" }, { repoRoot: r.root, asOf: "2026-09-01" })).toThrow(/escapes repo/);
+  });
+  it("branch_abandoned returns false for a missing branch (no throw)", () => {
+    const r = makeTmpGitRepo(); r.writeFile("a.ts"); r.commit("i");
+    expect(runPredicate("branch_abandoned", { branch: "does/not/exist", days: 30 }, { repoRoot: r.root, asOf: "2026-09-01" })).toBe(false);
+  });
 });

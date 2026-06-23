@@ -33,6 +33,7 @@ export const PREDICATES: Record<string, Predicate> = {
   /** ≥1 commit touched `path` strictly after `since` (ISO date) and on/before asOf. */
   commits_to_since: (args, ctx) => {
     const path = str(args, "path");
+    inRepo(ctx, path); // containment guard (throws if the path escapes the repo)
     const since = str(args, "since");
     const out = git(ctx, "log", `--since=${since}`, `--until=${ctx.asOf} 23:59:59`, "--oneline", "--", path);
     return out.length > 0;
