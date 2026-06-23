@@ -548,7 +548,16 @@ export function makeTmpGitRepo() {
   return {
     root,
     writeFile(rel: string, content = "x") { mkdirSync(join(root, dirname(rel)), { recursive: true }); writeFileSync(join(root, rel), content); },
-    commit(msg: string) { git("add", "-A"); git("commit", "-q", "-m", msg, "--date", "2026-06-20T10:00:00"); },
+    commit(msg: string) {
+      git("add", "-A");
+      // Pin BOTH author and committer dates so `git log --since` and `%cI` are deterministic
+      // (branch_abandoned/commits_to_since read committer date, which --date alone does NOT set).
+      execFileSync("git", ["commit", "-q", "-m", msg], {
+        cwd: root,
+        stdio: "pipe",
+        env: { ...process.env, GIT_AUTHOR_DATE: "2026-06-20T10:00:00", GIT_COMMITTER_DATE: "2026-06-20T10:00:00" },
+      });
+    },
     branch(name: string) { git("branch", name); },
     git,
   };
