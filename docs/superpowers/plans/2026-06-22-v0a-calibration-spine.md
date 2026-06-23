@@ -795,7 +795,7 @@ describe("projectState / dueForecasts", () => {
   it("returns only open forecasts due on/before asOf", () => {
     const p = join(mkdtempSync(join(tmpdir(), "csuite-proj-")), "l.jsonl");
     appendEvent(p, fc("a", "2026-09-01")); appendEvent(p, fc("b", "2026-10-01")); appendEvent(p, rs("a"));
-    expect(dueForecasts(p, "2026-09-15").map(f => f.id)).toEqual(["b"].filter(() => false).concat([])); // a is resolved, b not yet due
+    expect(dueForecasts(p, "2026-09-15").map(f => f.id)).toEqual([]); // a is resolved; b is not due until 2026-10-01
     expect(dueForecasts(p, "2026-10-01").map(f => f.id)).toEqual(["b"]);
   });
 });
