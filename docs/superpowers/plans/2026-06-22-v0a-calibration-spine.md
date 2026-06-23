@@ -1161,10 +1161,12 @@ process.exit(code);
 Run: `cd c-suite && pnpm vitest run test/cli/cli.test.ts`
 Expected: PASS (2 tests).
 
-- [ ] **Step 5: Run the full suite + lint**
+- [ ] **Step 5: Type-check, run the full suite, and lint**
 
-Run: `cd c-suite && pnpm test && pnpm lint`
-Expected: all tests PASS; Biome clean.
+Run: `cd c-suite && pnpm build && pnpm test && pnpm lint`
+Expected: `tsc` exits 0 (no type errors); all tests PASS; Biome clean.
+
+> **Why `pnpm build` is in the gate (do not drop it):** Vitest runs via esbuild/`tsx`, which **transpiles without type-checking** — strict-mode violations (e.g. `noUncheckedIndexedAccess` requiring guards/assertions) pass the test suite but fail `tsc`. A Biome `--write` that strips a non-null assertion will keep tests green while breaking the build. Every task's gate (here and in later plans) MUST include `pnpm build`.
 
 - [ ] **Step 6: Commit**
 
