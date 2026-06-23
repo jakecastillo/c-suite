@@ -1,0 +1,21 @@
+{
+  "name": "c-suite",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "bin": { "csuite": "bin/csuite.mjs" },
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "biome check src test",
+    "build": "tsc -p tsconfig.json"
+  },
+  "dependencies": { "zod": "^3.23.8" },
+  "devDependencies": {
+    "@biomejs/biome": "^1.9.4",
+    "tsx": "^4.19.2",
+    "typescript": "^5.6.3",
+    "vitest": "^2.1.4",
+    "@types/node": "^22.9.0"
+  }
+}
