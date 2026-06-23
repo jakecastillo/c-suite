@@ -63,7 +63,8 @@ By default the tool grounds against your **git toplevel**; override with
 csuite predict --text <claim> --p <0..1> --type <type> --by <yyyy-mm-dd> \
                --predicate <name> --arg key=value [--arg key=value ...]
 csuite resolve                 # resolve every forecast whose date has passed
-csuite track-record            # show your calibration over the ledger
+csuite track-record            # show your calibration (and verify the chain)
+csuite verify                  # check the ledger's hash chain for tampering
 csuite help | --version
 ```
 

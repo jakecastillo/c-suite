@@ -1,5 +1,3 @@
-This is a synthesis and authoring task — no code, no research, no tools needed. I have all seven seat briefs plus the brand brief. I'll produce the six-section decision-ready output directly.
-
 # c-suite — Composite AI Executive Board: Integration & Two-Tier Output
 
 ---

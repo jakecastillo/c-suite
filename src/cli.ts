@@ -4,7 +4,7 @@ import { parseClaim } from "./claim/schema.js";
 import { validateClaim } from "./claim/validator.js";
 import type { DecisionType, ForecastEvent } from "./ledger/events.js";
 import { dueForecasts, projectState } from "./ledger/project.js";
-import { appendEvent } from "./ledger/store.js";
+import { appendEvent, verifyChain } from "./ledger/store.js";
 import { calibrationReport, renderReport } from "./report/track-record.js";
 import { PREDICATES } from "./verifier/predicates.js";
 import { resolveForecast } from "./verifier/resolve.js";
@@ -27,7 +27,8 @@ Usage:
   csuite predict --text <claim> --p <0..1> --type <type> --by <yyyy-mm-dd> \\
                  --predicate <name> --arg key=value [--arg key=value ...]
   csuite resolve                 resolve every forecast whose date has passed
-  csuite track-record            show your calibration over the hash-chained ledger
+  csuite track-record            show your calibration (and verify the chain)
+  csuite verify                  check the ledger's hash chain for tampering
   csuite help | --version
 
 Types:      demand | pricing | feasibility | pace | scope
@@ -175,11 +176,27 @@ export function runCli(
     };
   }
 
+  if (cmd === "verify") {
+    const v = verifyChain(env.ledgerPath);
+    return v.ok
+      ? { code: 0, out: "ledger OK — the hash chain verifies" }
+      : {
+          code: 1,
+          out: `ledger TAMPERED — the hash chain breaks at entry ${v.brokenAt}`,
+        };
+  }
+
   if (cmd === "track-record") {
-    return {
-      code: 0,
-      out: renderReport(calibrationReport(projectState(env.ledgerPath))),
-    };
+    const integrity = verifyChain(env.ledgerPath);
+    const report = renderReport(
+      calibrationReport(projectState(env.ledgerPath)),
+    );
+    if (!integrity.ok)
+      return {
+        code: 1,
+        out: `⚠ LEDGER INTEGRITY BROKEN — the hash chain does not verify at entry ${integrity.brokenAt}.\n${report}`,
+      };
+    return { code: 0, out: report };
   }
 
   return { code: 1, out: USAGE };

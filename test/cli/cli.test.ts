@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { runCli } from "../../src/cli.js";
@@ -194,5 +194,75 @@ describe("csuite CLI", () => {
     );
     const line = JSON.parse(readFileSync(e.ledgerPath, "utf8").trim());
     expect(line.event.predicate_args.path).toBe("a=b=c");
+  });
+
+  it("resolves branch_abandoned through the CLI (numeric --arg coercion)", () => {
+    const r = makeTmpGitRepo();
+    r.writeFile("a.ts");
+    r.commit("base");
+    r.branch("spike/dynamo");
+    const e = env(r.root); // today=2026-09-01; helper pins commit dates to 2026-06-20
+    const p = runCli(
+      [
+        "predict",
+        "--text",
+        "spike is dead",
+        "--p",
+        "0.8",
+        "--type",
+        "scope",
+        "--by",
+        "2026-09-01",
+        "--predicate",
+        "branch_abandoned",
+        "--arg",
+        "branch=spike/dynamo",
+        "--arg",
+        "days=30",
+      ],
+      e,
+    );
+    expect(p.code).toBe(0);
+    const res = runCli(["resolve"], e);
+    expect(res.out).toMatch(/resolved 1/);
+    expect(res.out).not.toMatch(/skipped/);
+  });
+
+  it("verify (and track-record) detect a tampered ledger", () => {
+    const r = makeTmpGitRepo();
+    r.writeFile("a");
+    r.commit("i");
+    const e = env(r.root);
+    runCli(
+      [
+        "predict",
+        "--text",
+        "x",
+        "--p",
+        "0.5",
+        "--type",
+        "demand",
+        "--by",
+        "2026-09-01",
+        "--predicate",
+        "path_exists",
+        "--arg",
+        "path=a",
+      ],
+      e,
+    );
+    expect(runCli(["verify"], e).code).toBe(0);
+
+    const line = JSON.parse(readFileSync(e.ledgerPath, "utf8").trim());
+    line.event.p = 0.99; // tamper
+    writeFileSync(e.ledgerPath, `${JSON.stringify(line)}\n`);
+
+    const v = runCli(["verify"], e);
+    expect(v.code).toBe(1);
+    expect(v.out).toMatch(/TAMPERED/);
+
+    const tr = runCli(["track-record"], e);
+    expect(tr.code).toBe(1);
+    expect(tr.out).toMatch(/INTEGRITY BROKEN/);
   });
 });

@@ -23,10 +23,13 @@ function str(args: Record<string, unknown>, key: string): string {
   return v;
 }
 function num(args: Record<string, unknown>, key: string): number {
+  // CLI args arrive as strings; programmatic callers may pass numbers. Accept both.
   const v = args[key];
-  if (typeof v !== "number")
+  const n =
+    typeof v === "number" ? v : typeof v === "string" ? Number(v) : Number.NaN;
+  if (!Number.isFinite(n))
     throw new Error(`predicate arg '${key}' must be a number`);
-  return v;
+  return n;
 }
 function inRepo(ctx: PredicateContext, p: string): string {
   const root = resolve(ctx.repoRoot);

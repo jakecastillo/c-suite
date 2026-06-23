@@ -4,6 +4,7 @@
   "description": "A repo-grounded, self-grading calibration instrument: record decisions as falsifiable forecasts, resolve them against git reality with a deterministic verifier, and track your calibration over a tamper-evident ledger.",
   "type": "module",
   "license": "Apache-2.0",
+  "author": "Jake Castillo",
   "bin": { "csuite": "bin/csuite.mjs" },
   "files": ["dist", "bin", "README.md", "LICENSE", "NOTICE"],
   "engines": { "node": ">=20" },
