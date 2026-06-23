@@ -291,7 +291,7 @@ Expected: FAIL — cannot resolve `validator.js`.
 Create `c-suite/src/claim/validator.ts`:
 ```ts
 import { existsSync } from "node:fs";
-import { isAbsolute, resolve } from "node:path";
+import { isAbsolute, relative, resolve, sep } from "node:path";
 import type { Claim } from "./schema.js";
 
 export interface ValidationIssue { code: string; message: string }
@@ -307,7 +307,8 @@ export function validateClaim(claim: Claim, opts: ValidateOptions): ValidationIs
     }
     for (const c of claim.citations) {
       const abs = isAbsolute(c.file) ? c.file : resolve(root, c.file);
-      if (!abs.startsWith(root)) {
+      const rel = relative(root, abs);
+      if (rel === ".." || rel.startsWith(`..${sep}`) || isAbsolute(rel)) {  // robust containment (prefix-collision safe)
         issues.push({ code: "citation_escapes_repo", message: `citation escapes repo root: ${c.file}` });
       } else if (!existsSync(abs)) {
         issues.push({ code: "citation_not_found", message: `cited file not found: ${c.file}` });
@@ -584,7 +585,7 @@ Create `c-suite/src/verifier/predicates.ts`:
 ```ts
 import { execFileSync } from "node:child_process";
 import { existsSync } from "node:fs";
-import { isAbsolute, resolve } from "node:path";
+import { isAbsolute, relative, resolve, sep } from "node:path";
 
 export interface PredicateContext { repoRoot: string; asOf: string } // asOf: ISO date
 export type Predicate = (args: Record<string, unknown>, ctx: PredicateContext) => boolean;
@@ -602,9 +603,11 @@ function num(args: Record<string, unknown>, key: string): number {
   if (typeof v !== "number") throw new Error(`predicate arg '${key}' must be a number`);
   return v;
 }
-function inRepo(ctx: PredicateContext, rel: string): string {
-  const abs = isAbsolute(rel) ? rel : resolve(ctx.repoRoot, rel);
-  if (!abs.startsWith(resolve(ctx.repoRoot))) throw new Error(`path escapes repo: ${rel}`);
+function inRepo(ctx: PredicateContext, p: string): string {
+  const root = resolve(ctx.repoRoot);
+  const abs = isAbsolute(p) ? p : resolve(root, p);
+  const rel = relative(root, abs);
+  if (rel === ".." || rel.startsWith(`..${sep}`) || isAbsolute(rel)) throw new Error(`path escapes repo: ${p}`);
   return abs;
 }
 
