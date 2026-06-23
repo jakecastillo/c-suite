@@ -1,5 +1,5 @@
 import { existsSync } from "node:fs";
-import { isAbsolute, resolve } from "node:path";
+import { isAbsolute, relative, resolve, sep } from "node:path";
 import type { Claim } from "./schema.js";
 
 export interface ValidationIssue { code: string; message: string }
@@ -15,7 +15,8 @@ export function validateClaim(claim: Claim, opts: ValidateOptions): ValidationIs
     }
     for (const c of claim.citations) {
       const abs = isAbsolute(c.file) ? c.file : resolve(root, c.file);
-      if (!abs.startsWith(root)) {
+      const rel = relative(root, abs);
+      if (rel === ".." || rel.startsWith(`..${sep}`) || isAbsolute(rel)) {
         issues.push({ code: "citation_escapes_repo", message: `citation escapes repo root: ${c.file}` });
       } else if (!existsSync(abs)) {
         issues.push({ code: "citation_not_found", message: `cited file not found: ${c.file}` });

@@ -43,4 +43,17 @@ describe("validateClaim", () => {
     const issues = validateClaim(base({ falsification: undefined }), { repoRoot: root, isForecast: true });
     expect(issues.map(i => i.code)).toContain("forecast_needs_falsification");
   });
+  it("flags an absolute citation outside the repo", () => {
+    const root = repoWith("src/a.ts");
+    const issues = validateClaim(base({ provenance: "grounded", citations: [{ file: "/etc/hosts" }] }), { repoRoot: root });
+    expect(issues.map(i => i.code)).toContain("citation_escapes_repo");
+  });
+  it("flags a sibling dir that shares the root's name prefix", () => {
+    const root = repoWith("src/a.ts");
+    const sibling = `${root}-evil`;
+    mkdirSync(sibling, { recursive: true });
+    writeFileSync(join(sibling, "secret"), "x");
+    const issues = validateClaim(base({ provenance: "grounded", citations: [{ file: join(sibling, "secret") }] }), { repoRoot: root });
+    expect(issues.map(i => i.code)).toContain("citation_escapes_repo");
+  });
 });
