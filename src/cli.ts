@@ -6,6 +6,7 @@ import type { DecisionType, ForecastEvent } from "./ledger/events.js";
 import { dueForecasts, projectState } from "./ledger/project.js";
 import { appendEvent } from "./ledger/store.js";
 import { calibrationReport, renderReport } from "./report/track-record.js";
+import { PREDICATES } from "./verifier/predicates.js";
 import { resolveForecast } from "./verifier/resolve.js";
 
 export interface CliEnv {
@@ -65,6 +66,13 @@ export function runCli(
         code: 1,
         out: "error: forecast_needs_falsification (pass --predicate and --arg)",
       };
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(opts.by ?? ""))
+      return { code: 1, out: "error: --by must be an ISO date (yyyy-mm-dd)" };
+    if (!(opts.predicate in PREDICATES))
+      return {
+        code: 1,
+        out: `error: unknown predicate '${opts.predicate}' (known: ${Object.keys(PREDICATES).join(", ")})`,
+      };
     const claim = parseClaim({
       text: opts.text,
       provenance: "inference",
@@ -107,18 +115,26 @@ export function runCli(
 
   if (cmd === "resolve") {
     const due = dueForecasts(env.ledgerPath, env.today);
-    for (const f of due)
-      appendEvent(
-        env.ledgerPath,
-        resolveForecast(
-          f,
-          { repoRoot: env.repoRoot, asOf: env.today },
-          env.now,
-        ),
-      );
+    let resolved = 0;
+    let skipped = 0;
+    for (const f of due) {
+      try {
+        appendEvent(
+          env.ledgerPath,
+          resolveForecast(
+            f,
+            { repoRoot: env.repoRoot, asOf: env.today },
+            env.now,
+          ),
+        );
+        resolved++;
+      } catch {
+        skipped++;
+      }
+    }
     return {
       code: 0,
-      out: `resolved ${due.length} forecast(s) as of ${env.today}`,
+      out: `resolved ${resolved} forecast(s) as of ${env.today}${skipped ? `; skipped ${skipped} (error)` : ""}`,
     };
   }
 
