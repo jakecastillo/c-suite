@@ -5,9 +5,14 @@ import type { LedgerEvent } from "./events.js";
 interface ChainedLine { event: LedgerEvent; prev_hash: string; hash: string }
 const GENESIS = "0".repeat(64);
 
-/** Canonical JSON with sorted keys (one level deep is enough for our flat events + small args). */
-function canonical(event: LedgerEvent): string {
-  return JSON.stringify(event, Object.keys(event as Record<string, unknown>).sort());
+/** Deterministic stringify: recursively sort object keys so the hash covers ALL fields,
+ *  including nested predicate_args. (A JSON.stringify replacer-array filters nested keys
+ *  and would silently drop predicate_args — do not use that approach.) */
+function canonical(value: unknown): string {
+  if (value === null || typeof value !== "object") return JSON.stringify(value);
+  if (Array.isArray(value)) return `[${value.map(canonical).join(",")}]`;
+  const obj = value as Record<string, unknown>;
+  return `{${Object.keys(obj).sort().map((k) => `${JSON.stringify(k)}:${canonical(obj[k])}`).join(",")}}`;
 }
 function hashOf(prev: string, event: LedgerEvent): string {
   return createHash("sha256").update(prev + canonical(event)).digest("hex");

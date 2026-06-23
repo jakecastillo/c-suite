@@ -32,6 +32,14 @@ describe("hash-chained ledger store", () => {
     writeFileSync(p, [JSON.stringify(first), lines[1]].join("\n") + "\n");
     expect(verifyChain(p)).toEqual({ ok: false, brokenAt: 0 });
   });
+  it("detects tampering of nested predicate_args (the hash must cover all fields)", () => {
+    const p = join(mkdtempSync(join(tmpdir(), "csuite-led-")), "ledger.jsonl");
+    appendEvent(p, fc("a"));
+    const line = JSON.parse(readFileSync(p, "utf8").trim());
+    line.event.predicate_args = { path: "TAMPERED" };
+    writeFileSync(p, JSON.stringify(line) + "\n");
+    expect(verifyChain(p)).toEqual({ ok: false, brokenAt: 0 });
+  });
   it("treats a missing file as an empty chain", () => {
     expect(readChain("/nonexistent/ledger.jsonl")).toEqual([]);
     expect(verifyChain("/nonexistent/ledger.jsonl")).toEqual({ ok: true });
