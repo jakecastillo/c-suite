@@ -397,6 +397,14 @@ describe("hash-chained ledger store", () => {
     writeFileSync(p, [JSON.stringify(first), lines[1]].join("\n") + "\n");
     expect(verifyChain(p)).toEqual({ ok: false, brokenAt: 0 });
   });
+  it("detects tampering of nested predicate_args (the hash must cover all fields)", () => {
+    const p = join(mkdtempSync(join(tmpdir(), "csuite-led-")), "ledger.jsonl");
+    appendEvent(p, fc("a"));
+    const line = JSON.parse(readFileSync(p, "utf8").trim());
+    line.event.predicate_args = { path: "TAMPERED" };               // mutate only the nested args
+    writeFileSync(p, JSON.stringify(line) + "\n");
+    expect(verifyChain(p)).toEqual({ ok: false, brokenAt: 0 });
+  });
   it("treats a missing file as an empty chain", () => {
     expect(readChain("/nonexistent/ledger.jsonl")).toEqual([]);
     expect(verifyChain("/nonexistent/ledger.jsonl")).toEqual({ ok: true });
@@ -452,8 +460,14 @@ interface ChainedLine { event: LedgerEvent; prev_hash: string; hash: string }
 const GENESIS = "0".repeat(64);
 
 /** Canonical JSON with sorted keys (one level deep is enough for our flat events + small args). */
-function canonical(event: LedgerEvent): string {
-  return JSON.stringify(event, Object.keys(event as Record<string, unknown>).sort());
+/** Deterministic stringify: recursively sort object keys so the hash covers ALL fields,
+ *  including nested predicate_args. (A JSON.stringify replacer-array would filter nested
+ *  keys and silently drop predicate_args — do not use that approach.) */
+function canonical(value: unknown): string {
+  if (value === null || typeof value !== "object") return JSON.stringify(value);
+  if (Array.isArray(value)) return `[${value.map(canonical).join(",")}]`;
+  const obj = value as Record<string, unknown>;
+  return `{${Object.keys(obj).sort().map((k) => `${JSON.stringify(k)}:${canonical(obj[k])}`).join(",")}}`;
 }
 function hashOf(prev: string, event: LedgerEvent): string {
   return createHash("sha256").update(prev + canonical(event)).digest("hex");
@@ -483,7 +497,7 @@ export function verifyChain(path: string): { ok: boolean; brokenAt?: number } {
 }
 ```
 
-> Note: `canonical()` sorts top-level keys; `predicate_args` is small and written by us, so nested-key order is stable in practice. If args grow, swap in a deterministic deep-stringify — out of scope for v0a.
+> Note: `canonical()` recursively sorts keys at every level, so the hash covers all fields including nested `predicate_args` (a `JSON.stringify` replacer-array filters nested keys and would silently drop `predicate_args` — that approach is wrong and must not be used).
 
 - [ ] **Step 5: Run test to verify it passes**
 
