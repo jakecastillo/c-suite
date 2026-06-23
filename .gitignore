@@ -1,6 +1,8 @@
 node_modules/
 dist/
 *.tsbuildinfo
+# Personal, machine-local Claude Code settings (never shipped with the OSS repo)
+.claude/settings.local.json
 # The decision ledger is local-by-default — a private record of strategic doubts (spec 9.1).
 # Anchored to the repo root so it does NOT also ignore docs/board/ (the design docs).
 /board/
