@@ -1,22 +1,22 @@
 name: Release
 
-# Cut a release by pushing a version tag (e.g. `git tag v0.1.0 && git push --tags`).
-# CI runs the full gate, publishes to npm with provenance, and creates the GitHub Release.
+# Cut a release with:  gh release create vX.Y.Z --generate-notes
+# That creates the tag, which triggers this workflow to publish to npm with provenance.
+# The publish is idempotent: re-running a tag whose version is already on npm is a no-op,
+# so a manually-published first release (or a re-run) won't error.
 on:
   push:
     tags: ["v*"]
 
 permissions:
-  contents: write # create the GitHub Release from the tag
+  contents: read
   id-token: write # npm provenance + OIDC Trusted Publishing (no NPM_TOKEN needed)
 
 jobs:
-  release:
+  npm-publish:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
       - uses: pnpm/action-setup@v4
         with:
           version: 10
@@ -28,11 +28,15 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm check # typecheck + build + test + lint
       - run: npm install -g npm@latest # provenance + Trusted Publishing need a recent npm
-      - run: npm publish --provenance --access public
+      - name: Publish to npm (idempotent)
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          if npm view "c-suite@$VERSION" version >/dev/null 2>&1; then
+            echo "c-suite@$VERSION is already on npm — skipping publish."
+          else
+            npm publish --provenance --access public
+          fi
         # Auth via npm Trusted Publishing (OIDC) — configure once on npmjs.com, no secret.
-        # Token fallback: add an NPM_TOKEN repo secret and uncomment the env block.
+        # Token fallback: add an NPM_TOKEN repo secret and uncomment:
         # env:
         #   NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-      - uses: softprops/action-gh-release@v2
-        with:
-          generate_release_notes: true

@@ -1,8 +1,9 @@
 # Releasing c-suite
 
-Releases are cut by **pushing a version tag**. CI does the rest
-([`.github/workflows/release.yml`](.github/workflows/release.yml)): it runs the full
-gate, publishes to npm **with provenance**, and creates the GitHub Release.
+Releases are **GitHub Releases**. Creating one creates the version tag, which triggers
+CI ([`.github/workflows/release.yml`](.github/workflows/release.yml)) to run the full
+gate and **publish to npm with provenance**. The npm publish is idempotent — if the
+version is already on npm (e.g. a manual first publish, or a re-run), CI skips it.
 
 ## One-time setup: npm auth for CI
 
@@ -26,30 +27,33 @@ Pick one.
 ## Cutting a release
 
 ```bash
-# 1. bump the version + update the changelog
-#    edit package.json "version" and CHANGELOG.md, then commit
+# 1. bump the version + update the changelog, then commit & push
+#    edit package.json "version" and CHANGELOG.md
 
-# 2. tag and push — CI publishes to npm and creates the GitHub Release
-git tag "v$(node -p "require('./package.json').version")"
-git push origin main --tags
+# 2. create the GitHub Release — this creates the tag, which triggers CI to
+#    publish to npm with provenance
+gh release create "v$(node -p "require('./package.json').version")" --generate-notes
 
-# 3. watch it
+# 3. watch CI publish to npm
 gh run watch
 ```
 
 ## First release (bootstrapping a brand-new package)
 
-npm's Trusted Publishing UI needs the package to exist before you can configure it,
-so the very first publish is a chicken-and-egg. Do one of:
+npm's Trusted Publishing UI needs the package to exist before you can configure it, so
+the very first publish is a chicken-and-egg. Do one of:
 
-- **One-time local publish** (then switch to Trusted Publishing for every release
-  after): `npm login` once, then `npm publish --provenance --access public` from a
-  clean checkout. Requires the npm CLI to be authenticated (`npm whoami`).
-- **Token fallback (B)** for the first tag push, then optionally move to Trusted
-  Publishing.
+- **One-time local publish**, then switch to Trusted Publishing for every release after:
+  ```bash
+  npm whoami                       # confirm you're logged in (npm login if not)
+  npm publish --access public      # provenance needs CI; this first one won't have it
+  ```
+  Then create the GitHub Release (`gh release create v0.1.0 --generate-notes`); CI sees
+  the version already on npm and skips the publish.
+- **Token fallback (B)** for the first tag push, then optionally move to Trusted Publishing.
 
 ## Note on attribution
 
 Commits and tags in this repo are authored as the `jakecastillo` GitHub identity
-(`22990083+jakecastillo@users.noreply.github.com`). Verify with `git log -1 --format='%ae'`
-before tagging a release.
+(`22990083+jakecastillo@users.noreply.github.com`). Before tagging, verify both:
+`gh api user --jq .login` is `jakecastillo` and `git log -1 --format='%ae'` matches.
