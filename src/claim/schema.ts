@@ -4,9 +4,16 @@ export const Provenance = z.enum(["grounded", "inference", "speculation"]);
 export type Provenance = z.infer<typeof Provenance>;
 
 /** Epistemic lattice: grounded ⊑ inference ⊑ speculation (lower rank = more grounded). */
-export const PROVENANCE_RANK: Record<Provenance, number> = { grounded: 0, inference: 1, speculation: 2 };
+export const PROVENANCE_RANK: Record<Provenance, number> = {
+  grounded: 0,
+  inference: 1,
+  speculation: 2,
+};
 
-export const Citation = z.object({ file: z.string().min(1), line: z.number().int().positive().optional() });
+export const Citation = z.object({
+  file: z.string().min(1),
+  line: z.number().int().positive().optional(),
+});
 export type Citation = z.infer<typeof Citation>;
 
 export const Falsification = z.object({

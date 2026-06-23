@@ -1,9 +1,20 @@
-import { describe, it, expect } from "vitest";
-import { calibrationReport, renderReport } from "../../src/report/track-record.js";
+import { describe, expect, it } from "vitest";
 import type { ForecastState } from "../../src/ledger/project.js";
+import {
+  calibrationReport,
+  renderReport,
+} from "../../src/report/track-record.js";
 
-const resolved = (p: number, outcome: boolean): ForecastState =>
-  ({ id: Math.random().toString(), claim_text: "c", p, decision_type: "demand", resolve_by: "2026-09-01", status: "resolved", outcome, brier: (p-(outcome?1:0))**2 });
+const resolved = (p: number, outcome: boolean): ForecastState => ({
+  id: Math.random().toString(),
+  claim_text: "c",
+  p,
+  decision_type: "demand",
+  resolve_by: "2026-09-01",
+  status: "resolved",
+  outcome,
+  brier: (p - (outcome ? 1 : 0)) ** 2,
+});
 
 describe("calibrationReport", () => {
   it("reports insufficient when fewer than 8 resolved", () => {
@@ -18,7 +29,14 @@ describe("calibrationReport", () => {
     expect(r.meanBrier).toBeGreaterThan(0.5);
   });
   it("counts open forecasts separately and ignores them in Brier", () => {
-    const open: ForecastState = { id: "o", claim_text: "c", p: 0.5, decision_type: "demand", resolve_by: "2027-01-01", status: "open" };
+    const open: ForecastState = {
+      id: "o",
+      claim_text: "c",
+      p: 0.5,
+      decision_type: "demand",
+      resolve_by: "2027-01-01",
+      status: "open",
+    };
     const r = calibrationReport([open, resolved(0.8, true)]);
     expect(r.open).toBe(1);
     expect(r.resolved).toBe(1);
