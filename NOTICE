@@ -1,0 +1,23 @@
+c-suite
+Copyright 2026 Jake Castillo and contributors
+
+Licensed under the Apache License, Version 2.0 (see LICENSE).
+
+--------------------------------------------------------------------------------
+Named-individuals notice
+--------------------------------------------------------------------------------
+The design documentation in this repository (under docs/) references real public
+figures (executives, investors, authors) and their DOCUMENTED, PUBLICLY-STATED
+ideas, frameworks, and decisions — with attribution to public sources — as
+commentary and analysis. These individuals are not affiliated with, do not
+sponsor, and do not endorse this project. Names are used nominatively to
+attribute documented ideas; nothing here should be read as any individual's
+view on any specific situation.
+
+--------------------------------------------------------------------------------
+Not advice
+--------------------------------------------------------------------------------
+c-suite is a thinking aid, not financial, legal, or investment advice. It is
+provided WITHOUT WARRANTY of any kind. You are responsible for every decision
+you make. See LICENSE for the full disclaimer of warranty and limitation of
+liability.
