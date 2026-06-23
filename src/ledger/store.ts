@@ -37,7 +37,8 @@ export function readChain(path: string): ChainedLine[] {
 
 export function appendEvent(path: string, event: LedgerEvent): void {
   const chain = readChain(path);
-  const prev = chain.length ? chain[chain.length - 1]?.hash : GENESIS;
+  const last = chain.at(-1);
+  const prev = last ? last.hash : GENESIS;
   const line: ChainedLine = {
     event,
     prev_hash: prev,
@@ -49,8 +50,7 @@ export function appendEvent(path: string, event: LedgerEvent): void {
 export function verifyChain(path: string): { ok: boolean; brokenAt?: number } {
   const chain = readChain(path);
   let prev = GENESIS;
-  for (let i = 0; i < chain.length; i++) {
-    const line = chain[i] as ChainedLine;
+  for (const [i, line] of chain.entries()) {
     if (line.prev_hash !== prev || line.hash !== hashOf(prev, line.event))
       return { ok: false, brokenAt: i };
     prev = line.hash;
