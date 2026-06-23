@@ -17,6 +17,7 @@ export function resolveForecast(
     id: forecast.id,
     resolved_at: resolvedAt,
     outcome,
-    brier: brier(forecast.p, outcome),
+    // Round to 6 decimals so the ledger stores 0.49 rather than 0.48999999999999994.
+    brier: Math.round(brier(forecast.p, outcome) * 1e6) / 1e6,
   };
 }

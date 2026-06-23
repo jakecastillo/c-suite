@@ -1,3 +1,5 @@
 node_modules/
 dist/
 *.tsbuildinfo
+# The decision ledger is local-by-default — a private record of strategic doubts (spec 9.1)
+board/

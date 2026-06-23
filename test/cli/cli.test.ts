@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { runCli } from "../../src/cli.js";
@@ -142,5 +143,56 @@ describe("csuite CLI", () => {
     expect(out.code).toBe(0);
     expect(out.out).toMatch(/resolved 1/);
     expect(out.out).toMatch(/skipped 1/);
+  });
+
+  it("help / --help / -h print usage with exit 0", () => {
+    const r = makeTmpGitRepo();
+    for (const argv of [["help"], ["--help"], ["-h"]]) {
+      const out = runCli(argv, env(r.root));
+      expect(out.code).toBe(0);
+      expect(out.out).toMatch(/Usage:/);
+      expect(out.out).toMatch(/predict/);
+    }
+  });
+
+  it("--version prints the supplied version", () => {
+    const r = makeTmpGitRepo();
+    const out = runCli(["--version"], { ...env(r.root), version: "1.2.3" });
+    expect(out.code).toBe(0);
+    expect(out.out).toBe("csuite 1.2.3");
+  });
+
+  it("an unknown command prints full usage with exit 1", () => {
+    const r = makeTmpGitRepo();
+    const out = runCli(["wat"], env(r.root));
+    expect(out.code).toBe(1);
+    expect(out.out).toMatch(/Usage:/);
+  });
+
+  it("--arg values may contain '=' (split on the first only)", () => {
+    const r = makeTmpGitRepo();
+    r.writeFile("a", "x");
+    r.commit("i");
+    const e = env(r.root);
+    runCli(
+      [
+        "predict",
+        "--text",
+        "x",
+        "--p",
+        "0.5",
+        "--type",
+        "demand",
+        "--by",
+        "2026-09-01",
+        "--predicate",
+        "path_exists",
+        "--arg",
+        "path=a=b=c",
+      ],
+      e,
+    );
+    const line = JSON.parse(readFileSync(e.ledgerPath, "utf8").trim());
+    expect(line.event.predicate_args.path).toBe("a=b=c");
   });
 });
